@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user.js");
+const User = require("../models/User.js");
 const { ApiError, ERROR_CODES } = require("../utils/errors.js");
 const { error } = require("winston");
 
@@ -42,17 +42,17 @@ const createUser = async (req, res, next) => {
       return next(
         new ApiError(
           ERROR_CODES.CONFLICT,
-          "There's a alreadu a user with this email.",
+          "There's already a user with this email.",
         ),
       );
     }
-  }
 
-  if (error.name === "ValidationError") {
-    return next(new ApiError(ERROR_CODES.BAD_REQUEST, error.message));
-  }
+    if (error.name === "ValidationError") {
+      return next(new ApiError(ERROR_CODES.BAD_REQUEST, error.message));
+    }
 
-  return next(error);
+    return next(error);
+  }
 };
 
 const login = async (req, res, next) => {

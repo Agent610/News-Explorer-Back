@@ -1,4 +1,4 @@
-const Article = require("../models/article.js");
+const Article = require("../models/Article.js");
 const { ApiError, ERROR_CODES } = require("../utils/errors.js");
 const mongoose = require("mongoose");
 
