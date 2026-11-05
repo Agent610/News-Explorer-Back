@@ -37,6 +37,7 @@ const getNews = async (req, res, next) => {
 
     res.status(200).json({ articles });
   } catch (error) {
+    console.error("GDELT News Search Error:", error);
     next(error);
   }
 };
