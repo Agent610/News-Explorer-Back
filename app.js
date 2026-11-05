@@ -12,9 +12,16 @@ const { handleError } = require("./middlewares/errors.js");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL?.replace(/\/+$/, ""),
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
