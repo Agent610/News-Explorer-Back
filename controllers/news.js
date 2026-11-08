@@ -64,7 +64,9 @@ const getNews = async (req, res, next) => {
       urlToImage: article.image || "",
       publishedAt: article.published || "",
       source: {
-        name: article.author || "News Source",
+        name: article.url
+          ? new URL(article.url).hostname.replace("www.", "")
+          : "Unknown Source",
       },
     }));
 
