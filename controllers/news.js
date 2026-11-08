@@ -1,3 +1,7 @@
+const cache = new Map();
+
+const CACHE_DURATION = 5 * 60 * 1000;
+
 const getNews = async (req, res, next) => {
   try {
     const { keyword } = req.query;
@@ -8,36 +12,70 @@ const getNews = async (req, res, next) => {
       });
     }
 
-    const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc");
+    if (!process.env.CURRENTS_API_KEY) {
+      throw new Error("Currents API is not configured.");
+    }
 
-    url.searchParams.set("query", keyword.trim());
-    url.searchParams.set("mode", "ArtList");
-    url.searchParams.set("format", "json");
-    url.searchParams.set("maxrecords", "100");
-    url.searchParams.set("sort", "DateDesc");
+    const searchTerm = keyword.trim();
+    const cacheKey = searchTerm.toLowerCase();
 
-    const response = await fetch(url);
+    const cachedResult = cache.get(cacheKey);
+
+    if (cachedResult && Date.now() - cachedResult.timestamp < CACHE_DURATION) {
+      return res.status(200).json({
+        articles: cachedResult.articles,
+      });
+    }
+
+    const url = new URL("https://api.currentsapi.services/v1/search");
+
+    url.searchParams.set("keywords", searchTerm);
+    url.searchParams.set("language", "en");
+    url.searchParams.set("page_number", "1");
+    url.searchParams.set("page_size", "20");
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${process.env.CURRENTS_API_KEY}`,
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`GDELT request failed: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.message ||
+          errorData.msg ||
+          `Currents API request failed: ${response.status}`,
+      );
     }
 
     const data = await response.json();
 
-    const articles = (data.articles || []).map((article) => ({
+    if (data.status !== "ok") {
+      throw new Error("Currents API resulted in an error response");
+    }
+
+    const articles = (data.news || []).map((article) => ({
       title: article.title || "Untitled",
-      description: article.title || "",
+      description: article.description || "",
       url: article.url,
-      urlToImage: article.socialimage || "",
-      publishedAt: article.seendate || "",
+      urlToImage: article.image || "",
+      publishedAt: article.published || "",
       source: {
-        name: article.domain || "Unknown source",
+        name: article.author || "News Source",
       },
     }));
 
-    res.status(200).json({ articles });
+    cache.set(cacheKey, {
+      articles,
+      timestamp: Date.now(),
+    });
+
+    return res.status(200).json({ articles });
   } catch (error) {
-    console.error("GDELT News Search Error:", error);
+    console.error("Currents News Search Error:", error);
     next(error);
   }
 };
